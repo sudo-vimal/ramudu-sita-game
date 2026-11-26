@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Ramudu – Sita | రాముడు – సీత</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Noto+Serif+Telugu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="parchment-frame">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-te">రాముడు – సీత</span>
+        <span class="brand-en">Ramudu – Sita</span>
+      </div>
+      <div class="audio-bar">
+        <button id="btnMute" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">🔊</button>
+        <input id="volSlider" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Volume" />
+      </div>
+    </header>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- SCREEN 1: HOME -->
+    <main id="screenHome" class="screen">
+      <div class="ornament-divider">❖ ✦ ❖</div>
+      <p class="subtitle">Traditional Indian Chit Guessing Game<br><span class="te-sub">సంప్రదాయ చిట్టీల ఆట (4–10 ఆటగాళ్లు)</span></p>
+
+      <div class="card">
+        <label class="field-label">Your Display Name / మీ పేరు</label>
+        <input id="inputName" type="text" maxlength="20" placeholder="Enter your name..." autocomplete="off" />
+
+        <div class="tabs">
+          <button id="tabCreate" class="tab active">Create Room</button>
+          <button id="tabJoin" class="tab">Join Room</button>
+        </div>
+
+        <div id="panelCreate" class="panel">
+          <div class="row-2">
+            <div>
+              <label class="field-label">Rounds (5–50)</label>
+              <input id="inputRounds" type="number" min="5" max="50" value="5" />
+            </div>
+            <div>
+              <label class="field-label">Guess Timer</label>
+              <select id="inputTimer">
+                <option value="15">15 Seconds</option>
+                <option value="30" selected>30 Seconds</option>
+                <option value="60">60 Seconds</option>
+              </select>
+            </div>
+          </div>
+          <button id="btnCreateRoom" class="btn-primary">Create Private Room</button>
+        </div>
+
+        <div id="panelJoin" class="panel hidden">
+          <label class="field-label">6-Character Room Code</label>
+          <input id="inputRoomCode" type="text" maxlength="6" placeholder="e.g. K7M9XP" class="code-input" autocomplete="off" />
+          <button id="btnJoinRoom" class="btn-primary">Join Room</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- SCREEN 2: LOBBY -->
+    <main id="screenLobby" class="screen hidden">
+      <div class="room-banner card">
+        <div class="room-code-box">
+          <span class="muted-label">ROOM CODE</span>
+          <strong id="lobbyCode" class="room-code">------</strong>
+        </div>
+        <div class="share-actions">
+          <button id="btnCopyCode" class="btn-outline">Copy Code</button>
+          <button id="btnCopyLink" class="btn-outline">Share Invite Link</button>
+        </div>
+        <div class="room-meta">
+          <span id="lobbySettings">5 Rounds • 30s Guess</span>
+          <span id="lobbyCount">1 / 10 Players</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="section-title">Players in Sabha / ఆటగాళ్లు</h3>
+        <ul id="lobbyPlayerList" class="player-list"></ul>
+      </div>
+
+      <div class="sticky-footer">
+        <button id="btnToggleReady" class="btn-outline">Mark Ready</button>
+        <button id="btnStartGame" class="btn-primary hidden" disabled>Start Game (Need 4+ Ready)</button>
+      </div>
+    </main>
+
+    <!-- SCREEN 3: SECRET CHARACTER VIEW (10 SECONDS) -->
+    <main id="screenCharView" class="screen hidden">
+      <div class="round-pill">Round <span id="cvRound">1</span> of <span id="cvTotalRounds">5</span></div>
+      <h2 class="phase-heading">Your Secret Chit<br><span class="te-sub">మీ రహస్య చిట్టీ</span></h2>
+      <p class="hint-text">Keep your screen hidden from others! Folds automatically in <strong id="cvCountdown">10</strong>s</p>
+
+      <div class="chit-stage">
+        <div id="secretChit" class="chit-paper unfolded">
+          <div class="chit-seal">శ్రీ</div>
+          <div class="chit-inner">
+            <span class="chit-corner top-left">❖</span>
+            <span class="chit-corner top-right">❖</span>
+            <div id="chitTe" class="chit-name-te">రాముడు</div>
+            <div id="chitEn" class="chit-name-en">Ramudu</div>
+            <div id="chitHint" class="chit-role-hint">You must find Sita!</div>
+            <span class="chit-corner bottom-left">❖</span>
+            <span class="chit-corner bottom-right">❖</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- SCREEN 4: GUESSING PHASE -->
+    <main id="screenGuessing" class="screen hidden">
+      <div class="timer-header">
+        <span class="round-pill">Round <span id="gRound">1</span>/<span id="gTotalRounds">5</span></span>
+        <div class="countdown-badge" id="gTimerBadge">⏱ <span id="gCountdown">30</span>s</div>
+      </div>
+
+      <div id="ramuduView" class="hidden">
+        <h2 class="phase-heading">You are Ramudu (రాముడు)<br><span class="te-sub">సీత ఎవరో గుర్తించండి</span></h2>
+        <p class="hint-text">Select the player holding the <strong>Sita (సీత)</strong> chit and press Proceed.</p>
+        <div id="targetGrid" class="target-grid"></div>
+        <button id="btnProceedGuess" class="btn-primary" disabled>Proceed with Selection</button>
+      </div>
+
+      <div id="waitingView" class="card center-box hidden">
+        <div class="folded-mini">శ్రీ</div>
+        <h2 class="phase-heading">Ramudu is Deciding...<br><span class="te-sub">రాముడు ఆలోచిస్తున్నాడు...</span></h2>
+        <p class="hint-text">Keep a poker face! Do not reveal your chit.</p>
+      </div>
+    </main>
+
+    <!-- SCREEN 5: 5-SECOND SUSPENSE -->
+    <main id="screenSuspense" class="screen hidden">
+      <div class="card center-box suspense-card">
+        <div class="pulse-mandala">☸</div>
+        <h2 class="phase-heading">Opening the Chits...<br><span class="te-sub">చిట్టీలు తెరవబడుతున్నాయి...</span></h2>
+        <div class="suspense-number" id="sCountdown">5</div>
+      </div>
+    </main>
+
+    <!-- SCREEN 6: REVEAL & ROUND RESULTS -->
+    <main id="screenResults" class="screen hidden">
+      <div class="round-pill">Round <span id="rRound">1</span> of <span id="rTotalRounds">5</span> Results</div>
+      <div id="outcomeBanner" class="outcome-banner card"></div>
+      <div class="card table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Chit (చిట్టీ)</th>
+              <th>Round</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <div class="sticky-footer">
+        <button id="btnNextRound" class="btn-primary hidden">Next Round ➔</button>
+        <p id="waitingHostNext" class="hint-text hidden">Waiting for host to start the next round...</p>
+      </div>
+    </main>
+
+    <!-- SCREEN 7: FINAL LEADERBOARD -->
+    <main id="screenLeaderboard" class="screen hidden">
+      <div class="ornament-divider">👑 ✦ 👑</div>
+      <h2 class="phase-heading">Final Sabha Standings<br><span class="te-sub">తుది విజేతల పట్టిక</span></h2>
+      <div id="winnerHighlight" class="winner-card card"></div>
+      <div class="card table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Rounds</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+      <div class="sticky-footer">
+        <button id="btnPlayAgainHome" class="btn-outline">Back to Home</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

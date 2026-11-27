@@ -399,6 +399,78 @@ io.on('connection', (socket) => {
   });
 
   // 7. Handle Disconnect (Preserve player identity for reconnection)
+  
+  // 7. Host Terminates Room (Allowed in LOBBY and RESULTS)
+  socket.on('game:terminate', (_payload, ack) => {
+    const { roomCode, playerId } = socket.data || {};
+    const room = rooms.get(roomCode);
+    if (!room) return ack?.({ ok: false, error: 'Room not found.' });
+    if (room.hostId !== playerId) {
+      return ack?.({ ok: false, error: 'Only the host can terminate the game.' });
+    }
+    if (room.phase !== 'LOBBY' && room.phase !== 'RESULTS') {
+      return ack?.({ ok: false, error: 'Can only terminate in Lobby or after a round.' });
+    }
+    if (room.timerId) clearTimeout(room.timerId);
+    io.to(room.code).emit('room:terminated', {
+      reason: 'The host ended the game session.'
+    });
+    rooms.delete(room.code);
+    ack?.({ ok: true });
+  });
+
+  // 8. Player Exits Room in Lobby or After Game Completes
+  socket.on('game:leave', (_payload, ack) => {
+    const { roomCode, playerId } = socket.data || {};
+    const room = rooms.get(roomCode);
+    if (!room) return ack?.({ ok: true });
+
+    if (room.phase === 'LOBBY' && room.hostId !== playerId) {
+      room.players = room.players.filter((p) => p.id !== playerId);
+      socket.leave(room.code);
+      socket.data = {};
+      broadcastState(room);
+    } else if (room.phase === 'LEADERBOARD') {
+      room.players = room.players.filter((p) => p.id !== playerId);
+      socket.leave(room.code);
+      socket.data = {};
+      if (room.players.length === 0) {
+        if (room.timerId) clearTimeout(room.timerId);
+        rooms.delete(room.code);
+      }
+    }
+    ack?.({ ok: true });
+  });
+
+  // 9. Host Removes / Kicks a Player in Lobby
+  socket.on('game:kick', ({ targetPlayerId }, ack) => {
+    const { roomCode, playerId } = socket.data || {};
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'LOBBY') return;
+    if (room.hostId !== playerId) {
+      return ack?.({ ok: false, error: 'Only the host can remove players.' });
+    }
+    if (!targetPlayerId || targetPlayerId === playerId) return;
+
+    const target = room.players.find((p) => p.id === targetPlayerId);
+    if (!target) return;
+
+    if (target.socketId) {
+      io.to(target.socketId).emit('room:kicked', {
+        reason: 'You were removed from the lobby by the host.'
+      });
+      const targetSock = io.sockets.sockets.get(target.socketId);
+      if (targetSock) {
+        targetSock.leave(room.code);
+        targetSock.data = {};
+      }
+    }
+
+    room.players = room.players.filter((p) => p.id !== targetPlayerId);
+    broadcastState(room);
+    ack?.({ ok: true });
+  });
+
   socket.on('disconnect', () => {
     const { roomCode, playerId } = socket.data || {};
     const room = rooms.get(roomCode);
@@ -409,15 +481,7 @@ io.on('connection', (socket) => {
       player.isConnected = false;
       player.socketId = null;
 
-      // Transfer host if host disconnects while still in LOBBY
-      if (room.phase === 'LOBBY' && room.hostId === player.id) {
-        const nextConnected = room.players.find((p) => p.isConnected);
-        if (nextConnected) {
-          room.hostId = nextConnected.id;
-          nextConnected.isReady = true;
-        }
-      }
-      broadcastState(room);
+            broadcastState(room);
     }
   });
 });

@@ -97,6 +97,23 @@ function showToast(msg, durationMs = 3500) {
   el._t = setTimeout(() => el.classList.add('hidden'), durationMs);
 }
 
+function closeLocalSessionAndGoHome(toastMsg) {
+  localStorage.removeItem('rs_roomCode');
+  localStorage.removeItem('rs_playerId');
+  localStorage.removeItem('rs_playerToken');
+  state.roomCode = '';
+  state.playerId = '';
+  state.playerToken = '';
+  state.isHost = false;
+  state.isRamudu = false;
+  state.selectedTargetId = null;
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+  showScreen('screenHome');
+  if (toastMsg) showToast(toastMsg);
+}
+
 function showScreen(screenId) {
   [
     'screenHome',
@@ -344,7 +361,10 @@ function renderLobby(room) {
       badgeHtml = `<span class="badge badge-wait">Waiting</span>`;
     }
 
-    li.innerHTML = `<span><strong>${escapeHtml(p.name)}</strong>${hostTag}${youTag}</span>${badgeHtml}`;
+    const kickBtnHtml = (isHost && p.id !== room.hostId)
+      ? `<button type="button" class="btn-kick" data-kick-id="${p.id}" title="Remove player">✕</button>`
+      : '';
+    li.innerHTML = `<span><strong>${escapeHtml(p.name)}</strong>${hostTag}${youTag}</span><div class="player-actions">${badgeHtml}${kickBtnHtml}</div>`;
     list.appendChild(li);
   });
 
@@ -363,6 +383,8 @@ function renderLobby(room) {
   $('btnStartGame').textContent = allReady
     ? `Start Round 1 (${room.players.length} Players)`
     : `Waiting for 4+ Ready Players (${room.players.length}/4)`;
+  $('btnTerminateLobby').classList.toggle('hidden', !isHost);
+  $('btnExitLobby').classList.toggle('hidden', isHost);
 }
 
 function renderGuessing(room) {
@@ -446,6 +468,7 @@ function renderResults(room, playSound) {
   const isFinal = room.currentRound >= room.totalRounds;
   $('btnNextRound').classList.toggle('hidden', !isHost);
   $('btnNextRound').textContent = isFinal ? 'View Final Leaderboard 🏆' : 'Next Round ➔';
+  $('btnTerminateResults').classList.toggle('hidden', !isHost);
   $('waitingHostNext').classList.toggle('hidden', isHost);
 }
 
@@ -506,3 +529,59 @@ setInterval(() => {
     $('sCountdown').textContent = sec;
   }
 }, 200);
+
+// --- Lobby Kick Player, Host Terminate, Guest Exit & Clean Session End ---
+$('lobbyPlayerList').addEventListener('click', (e) => {
+  const kickBtn = e.target.closest('[data-kick-id]');
+  if (!kickBtn) return;
+  const targetPlayerId = kickBtn.getAttribute('data-kick-id');
+  socket.emit('game:kick', { targetPlayerId }, (res) => {
+    if (res && !res.ok) showToast(res.error || 'Could not remove player');
+  });
+});
+
+// --- Unified Confirmation Modal, Terminate, Exit & Session End Handlers ---
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#btnTerminateLobby') || e.target.closest('#btnTerminateResults')) {
+    $('confirmModal')?.classList.remove('hidden');
+    return;
+  }
+
+  if (e.target.closest('#btnConfirmCancel') || e.target.id === 'confirmModal') {
+    $('confirmModal')?.classList.add('hidden');
+    return;
+  }
+
+  if (e.target.closest('#btnConfirmProceed')) {
+    $('confirmModal')?.classList.add('hidden');
+    socket.emit('game:terminate', {}, (res) => {
+      if (res && !res.ok) {
+        showToast(res.error || 'Could not terminate game');
+      } else {
+        closeLocalSessionAndGoHome('Game terminated.');
+      }
+    });
+    return;
+  }
+
+  if (e.target.closest('#btnExitLobby')) {
+    socket.emit('game:leave', {}, () => {
+      closeLocalSessionAndGoHome('You left the lobby.');
+    });
+    return;
+  }
+
+  if (e.target.closest('#btnPlayAgainHome')) {
+    socket.emit('game:leave', {}, () => {
+      closeLocalSessionAndGoHome();
+    });
+  }
+});
+
+socket.on('room:terminated', ({ reason }) => {
+  closeLocalSessionAndGoHome(reason || 'The host ended the game.');
+});
+
+socket.on('room:kicked', ({ reason }) => {
+  closeLocalSessionAndGoHome(reason || 'You were removed from the lobby.');
+});

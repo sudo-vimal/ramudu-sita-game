@@ -89,6 +89,8 @@
       <div class="sticky-footer">
         <button id="btnToggleReady" class="btn-outline">Mark Ready</button>
         <button id="btnStartGame" class="btn-primary hidden" disabled>Start Game (Need 4+ Ready)</button>
+        <button id="btnTerminateLobby" class="btn-danger hidden">Terminate Game</button>
+        <button id="btnExitLobby" class="btn-outline hidden">Exit Game</button>
       </div>
     </main>
 
@@ -164,6 +166,7 @@
       </div>
       <div class="sticky-footer">
         <button id="btnNextRound" class="btn-primary hidden">Next Round ➔</button>
+        <button id="btnTerminateResults" class="btn-danger hidden">Terminate Game</button>
         <p id="waitingHostNext" class="hint-text hidden">Waiting for host to start the next round...</p>
       </div>
     </main>
@@ -194,5 +197,18 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/app.js"></script>
+
+  <!-- CUSTOM ROYAL CONFIRMATION MODAL -->
+  <div id="confirmModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card card">
+      <h3 class="phase-heading" style="margin-bottom:6px;">Terminate Game?<br><span class="te-sub">ఆటను నిలిపివేయాలా?</span></h3>
+      <p class="hint-text" style="margin-bottom:18px;">This will end the match immediately and disconnect all players from the room.</p>
+      <div class="modal-actions">
+        <button id="btnConfirmCancel" type="button" class="btn-outline">Keep Playing</button>
+        <button id="btnConfirmProceed" type="button" class="btn-danger">Yes, Terminate</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

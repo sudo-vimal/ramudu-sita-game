@@ -269,6 +269,7 @@ socket.on('round:private_chit', ({ round, character }) => {
   state.isRamudu = character.id === 'ramudu';
   state.selectedTargetId = null;
 
+  $('chitPortrait').innerHTML = `<img src="/images/${character.id}.webp" onerror="this.onerror=null;this.src='/images/${character.id}.jpg'" alt="${character.en}" />`;
   $('chitTe').textContent = character.te;
   $('chitEn').textContent = character.en;
 

@@ -75,9 +75,9 @@ const sfx = new SoundEngine();
 
 // --- App State ---
 const state = {
-  roomCode: sessionStorage.getItem('rs_roomCode') || '',
-  playerId: sessionStorage.getItem('rs_playerId') || '',
-  playerToken: sessionStorage.getItem('rs_playerToken') || '',
+  roomCode: localStorage.getItem('rs_roomCode') || '',
+  playerId: localStorage.getItem('rs_playerId') || '',
+  playerToken: localStorage.getItem('rs_playerToken') || '',
   room: null,
   privateChit: null,
   isRamudu: false,
@@ -115,9 +115,9 @@ function saveSession(roomCode, playerId, playerToken) {
   state.roomCode = roomCode;
   state.playerId = playerId;
   state.playerToken = playerToken;
-  sessionStorage.setItem('rs_roomCode', roomCode);
-  sessionStorage.setItem('rs_playerId', playerId);
-  sessionStorage.setItem('rs_playerToken', playerToken);
+  localStorage.setItem('rs_roomCode', roomCode);
+  localStorage.setItem('rs_playerId', playerId);
+  localStorage.setItem('rs_playerToken', playerToken);
 }
 
 // --- Audio UI Setup ---
@@ -199,7 +199,7 @@ socket.on('connect', () => {
       { roomCode: state.roomCode, playerToken: state.playerToken },
       (res) => {
         if (!res?.ok) {
-          sessionStorage.clear();
+          localStorage.clear();
           state.roomCode = '';
           state.playerToken = '';
           showScreen('screenHome');
@@ -259,7 +259,7 @@ $('btnNextRound').addEventListener('click', () => {
 });
 
 $('btnPlayAgainHome').addEventListener('click', () => {
-  sessionStorage.clear();
+  localStorage.clear();
   window.location.href = '/';
 });
 
